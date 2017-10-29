@@ -18,15 +18,15 @@ use strict;
 
 # User name / IP used to ssh into the compute node.
 # Be sure to escape the "@" sign. E.g.: "user_name\@192.168.1.1"
-my $compute_node_hostname = "";
+my $compute_node_hostname = "merope";
 
 # Path on the compute node to the CUDA bin directory. nvprof will be located
 # here. This path is usually "/usr/local/cuda-[version]/bin"
-my $cuda_path = "/usr/local/cuda-9.0/bin";
+my $cuda_path = "/usr/local/cuda-8.0/bin";
 
 # Path on the compute node to the CUDA libraries.
 # This path is usually "/usr/local/cuda-[version]/lib64"
-my $cuda_ld_library_path = "/usr/local/cuda-9.0/lib64";
+my $cuda_ld_library_path = "/usr/local/cuda-8.0/lib64";
 
 # Environment variable(s) to be set on the compute node before running
 # application (optional). E.g. "VARIABLE=value"
@@ -82,22 +82,29 @@ my $nvprof_command = "$nvprof_options ./$exe_name $exe_options";
 
 $cmd = "ssh $compute_node_hostname \"cd $exe_path;LD_LIBRARY_PATH=$cuda_ld_library_path:\$LD_LIBRARY_PATH PATH=$cuda_path:\$PATH $env nvprof $nvprof_command\"";
 
+my $commandfilename = 'nvprof_commands.txt';
+open(my $fh, '>>', $commandfilename);
+say $fh $cmd;
+close $fh;
+
 system($cmd);
 if($?) {
     exit $? >> 8;
 }
 
-# Replace %p with * to copy all files generated. %p is specified if multiple
-# processes are to be profiled, in which case, the %p is replaced by the
-# process id of the profiled application.
-$output_file_name =~ s/%p/\*/g;
+# don't need this, since login and compute node have the same file system mounted
 
-# Copy the file from the compute node to this machine (i.e. the login node)
-# via scp.
-$cmd = "scp $compute_node_hostname:$exe_path/$output_file_name $copy_path";
-system($cmd);
-
-# Delete the original file on the compute node
-$cmd = "ssh $compute_node_hostname rm $exe_path/$output_file_name";
-system($cmd);
-exit $? >> 8;
+## Replace %p with * to copy all files generated. %p is specified if multiple
+## processes are to be profiled, in which case, the %p is replaced by the
+## process id of the profiled application.
+#$output_file_name =~ s/%p/\*/g;
+#
+## Copy the file from the compute node to this machine (i.e. the login node)
+## via scp.
+#$cmd = "scp $compute_node_hostname:$exe_path/$output_file_name $copy_path";
+#system($cmd);
+#
+## Delete the original file on the compute node
+#$cmd = "ssh $compute_node_hostname rm $exe_path/$output_file_name";
+#system($cmd);
+#exit $? >> 8;
